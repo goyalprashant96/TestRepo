@@ -1,0 +1,328 @@
+{
+  "openapi": "3.0.0",
+  "info": {
+    "version": "0.0.1",
+    "title": "Attachment Management OAPI Solution",
+    "description": "Endpoints for handling the attachment management"
+  },
+  "paths": {
+    "/openapi/bos/v1/attachments": {
+      "get": {
+        "summary": "Returns a list of attachment metadata for specified filter",
+        "operationId": "GetAttachments",
+        "parameters": [
+          {
+            "name": "EntityType",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          },
+          {
+            "name": "EntityId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          },
+          {
+            "name": "ClientId",
+            "in": "query",
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "A collection of attachments",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AttachmentsCollection"
+                }
+              }
+            }
+          }
+        },
+        "x-application-visibility": "saxo-only",
+        "x-network-visibility": "internal",
+        "x-required-permissions": "personal-read"
+      },
+      "post": {
+        "summary": "Creates an attachment either from provided file or CRM reference",
+        "operationId": "CreateAttachment",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "oneOf": [
+                  {
+                    "$ref": "#/components/schemas/FileAttachment"
+                  },
+                  {
+                    "$ref": "#/components/schemas/CrmAttachment"
+                  },
+                  {
+                    "$ref": "#/components/schemas/UrlAttachment"
+                  }
+                ],
+                "discriminator": {
+                  "propertyName": "AttachmentType",
+                  "mapping": {
+                    "File": "#/components/schemas/FileAttachment",
+                    "Email": "#/components/schemas/FileAttachment",
+                    "Url": "#/components/schemas/UrlAttachment",
+                    "CRM": "#/components/schemas/CrmAttachment",
+                    "Other": "#/components/schemas/FileAttachment"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "The attachment was created",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "properties": {
+                    "AttachmentId": {
+                      "type": "string"
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/openapi/bos/v1/attachments/{AttachmentId}": {
+      "parameters": [
+        {
+          "name": "AttachmentId",
+          "in": "path",
+          "schema": {
+            "type": "string"
+          },
+          "required": true
+        }
+      ],
+      "get": {
+        "summary": "Returns metadata for a single attachment",
+        "operationId": "GetAttachment",
+        "responses": {
+          "200": {
+            "description": "Attachment metadata",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/FileAttachment"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "The attachment could not be found"
+          }
+        },
+        "x-application-visibility": "saxo-only",
+        "x-network-visibility": "internal",
+        "x-required-permissions": "personal-read"
+      },
+      "patch": {
+        "summary": "Updates metadata on the attachment",
+        "operationId": "UpdateAttachment",
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AttachmentDescription"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Attachment was updated"
+          },
+          "404": {
+            "description": "The attachment could not be found"
+          }
+        }
+      },
+      "delete": {
+        "summary": "Deletes an attachment",
+        "responses": {
+          "200": {
+            "description": "The attachment was deleted"
+          },
+          "404": {
+            "description": "The attachment could not be found"
+          }
+        }
+      }
+    },
+    "/openapi/bos/v1/attachments/{AttachmentId}/download": {
+      "get": {
+        "summary": "Downloads the attachment",
+        "operationId": "DownloadAttachment",
+        "parameters": [
+          {
+            "name": "AttachmentId",
+            "in": "path",
+            "schema": {
+              "type": "string"
+            },
+            "required": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Attachment download"
+          },
+          "404": {
+            "description": "The attachment could not be found"
+          }
+        },
+        "x-application-visibility": "saxo-only",
+        "x-network-visibility": "internal",
+        "x-required-permissions": "personal-read"
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "AttachmentDescription": {
+        "type": "object",
+        "properties": {
+          "Title": {
+            "type": "string"
+          },
+          "Description": {
+            "type": "string"
+          }
+        }
+      },
+      "FileAttachment": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Attachment"
+          },
+          {
+            "$ref": "#/components/schemas/AttachmentDescription"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "FileLocation": {
+                "type": "string"
+              },
+              "FileName": {
+                "type": "string"
+              },
+              "CreatedOn": {
+                "type": "string",
+                "format": "date-time",
+                "readOnly": true
+              },
+              "ChangedBy": {
+                "type": "string",
+                "readOnly": true
+              },
+              "File": {
+                "type": "string",
+                "writeOnly": true,
+                "format": "byte"
+              }
+            }
+          }
+        ]
+      },
+      "CrmAttachment": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Attachment"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "CrmCaseId": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "UrlAttachment": {
+        "allOf": [
+          {
+            "$ref": "#/components/schemas/Attachment"
+          },
+          {
+            "type": "object",
+            "properties": {
+              "Location": {
+                "type": "string"
+              }
+            }
+          }
+        ]
+      },
+      "Attachment": {
+        "type": "object",
+        "required": [
+          "AttachmentId",
+          "EntityId",
+          "EntityType",
+          "AttachmentType"
+        ],
+        "properties": {
+          "AttachmentId": {
+            "type": "string",
+            "readOnly": true
+          },
+          "ClientId": {
+            "type": "string"
+          },
+          "EntityId": {
+            "type": "string"
+          },
+          "EntityType": {
+            "type": "string"
+          },
+          "AttachmentType": {
+            "type": "string",
+            "enum": [
+              "File",
+              "Email",
+              "Url",
+              "CRM",
+              "Other"
+            ]
+          }
+        }
+      },
+      "AttachmentsCollection": {
+        "type": "object",
+        "properties": {
+          "__count": {
+            "type": "integer"
+          },
+          "Data": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/FileAttachment"
+            }
+          }
+        }
+      }
+    }
+  }
+}
